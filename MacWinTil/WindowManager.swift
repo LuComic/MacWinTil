@@ -15,6 +15,9 @@ class WindowManager: ObservableObject {
     
     private var windowObserver: AXObserver?
     private var layoutEnforcementTimer: Timer?
+    private var isBringingAllToFront = false // Flag to prevent recursive activation
+    private var originallyActivatedApp: NSRunningApplication? // Store the app user originally clicked
+    private var lastActivatedApp: String? // Track the previously active app
     
     init() {
         requestAccessibilityPermissions()
@@ -85,6 +88,8 @@ class WindowManager: ObservableObject {
         // Check if app is excluded in config
         if ConfigManager.shared.isAppExcluded(appName) {
             print("App \(appName) is excluded by config, skipping")
+            // Still update lastActivatedApp for context tracking
+            lastActivatedApp = appName
             return
         }
         
@@ -142,6 +147,8 @@ class WindowManager: ObservableObject {
         // Check if app is excluded in config
         if ConfigManager.shared.isAppExcluded(appName) {
             print("App \(appName) is excluded by config, skipping")
+            // Still update lastActivatedApp for context tracking
+            lastActivatedApp = appName
             return
         }
         
@@ -164,6 +171,33 @@ class WindowManager: ObservableObject {
         if app.activationPolicy != .regular { return }
         
         print("Detected app activation: \(appName) (\(app.bundleIdentifier ?? "no bundle ID"))")
+        
+        // Check if this app is in the current space (tiled)
+        let currentSpaceApps = spaces[currentSpace, default: []]
+        let isAppInCurrentSpace = currentSpaceApps.contains(appName)
+        
+        // Check if the previously active app was also tiled
+        let wasLastAppTiled = lastActivatedApp != nil && currentSpaceApps.contains(lastActivatedApp!)
+        
+        print("Debug: Current app: \(appName), Last app: \(lastActivatedApp ?? "none"), Was last tiled: \(wasLastAppTiled), Current is tiled: \(isAppInCurrentSpace)")
+        
+        // Only bring all to front if:
+        // 1. Current app is tiled AND
+        // 2. Previous app was NOT tiled (switching from non-tiled to tiled context) AND
+        // 3. We're not already bringing all to front
+        if isAppInCurrentSpace && !wasLastAppTiled && !isBringingAllToFront {
+            print("Switching from non-tiled to tiled app (\(appName)), bringing all tiled windows to front")
+            // Save the originally activated app
+            originallyActivatedApp = app
+            bringAllTiledWindowsToFront()
+        } else if isAppInCurrentSpace {
+            print("Staying within tiled context (\(appName)), no need to bring all to front")
+        } else {
+            print("App \(appName) is not tiled, no action needed")
+        }
+        
+        // Update the last activated app after the logic
+        lastActivatedApp = appName
         
         // Check if app is already running in another space
         let existingSpace = findSpaceContaining(appName: appName)
@@ -533,6 +567,52 @@ class WindowManager: ObservableObject {
     func removeAppFromCurrentSpace(_ appName: String) {
         spaces[currentSpace]?.removeAll { $0 == appName }
         arrangeWindowsInCurrentSpace()
+    }
+    
+    // MARK: - Window Management
+    private func bringAllTiledWindowsToFront() {
+        let currentSpaceApps = spaces[currentSpace, default: []]
+        
+        // Set flag to prevent recursive activation
+        isBringingAllToFront = true
+        
+        // Bring each tiled app to front with a small delay to avoid conflicts
+        for (index, appName) in currentSpaceApps.enumerated() {
+            if let app = NSWorkspace.shared.runningApplications.first(where: { $0.localizedName == appName }) {
+                // Use a small delay between activations to ensure proper ordering
+                let delay = Double(index) * 0.02 // 20ms between each app
+                
+                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                    // Activate the app to bring its windows to front
+                    app.activate(options: [])
+                    print("Brought \(appName) to front (delay: \(delay)s)")
+                }
+            }
+        }
+        
+        // After bringing all apps to front, rearrange to ensure proper tiling
+        DispatchQueue.main.asyncAfter(deadline: .now() + Double(currentSpaceApps.count) * 0.02 + 0.05) {
+            self.arrangeWindowsInCurrentSpace()
+            // Clear flag after all activations are complete
+            self.isBringingAllToFront = false
+            
+            // Now activate the originally clicked app
+            if let originalApp = self.originallyActivatedApp {
+                // Temporarily set flag to prevent re-triggering the loop
+                self.isBringingAllToFront = true
+                originalApp.activate(options: [])
+                if let appName = originalApp.localizedName {
+                    print("Re-activated original app: \(appName)")
+                }
+                // Clear the stored app and flag after a short delay
+                self.originallyActivatedApp = nil
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    self.isBringingAllToFront = false
+                }
+            }
+            
+            print("Finished bringing all tiled windows to front")
+        }
     }
     
     // MARK: - App Exclusion Toggle

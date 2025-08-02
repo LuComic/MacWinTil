@@ -75,7 +75,10 @@ class MenuBarManager: ObservableObject {
         menu.addItem(NSMenuItem.separator())
         
         // Space management
-        let newSpaceItem = NSMenuItem(title: "Create New Space", action: #selector(createNewSpace), keyEquivalent: "n")
+        let createSpaceShortcut = ConfigManager.shared.getShortcut(for: "createNewSpace") ?? "⌘⌥N"
+        let (keyEquivalent, modifierMask) = parseShortcutForMenu(createSpaceShortcut)
+        let newSpaceItem = NSMenuItem(title: "Create New Space", action: #selector(createNewSpace), keyEquivalent: keyEquivalent)
+        newSpaceItem.keyEquivalentModifierMask = modifierMask
         newSpaceItem.target = self
         menu.addItem(newSpaceItem)
         
@@ -132,6 +135,30 @@ class MenuBarManager: ObservableObject {
         if spaceNumber == windowManager.currentSpace {
             windowManager.removeAppFromCurrentSpace(appName)
         }
+    }
+    
+    // MARK: - Helper Methods
+    private func parseShortcutForMenu(_ shortcutString: String) -> (keyEquivalent: String, modifierMask: NSEvent.ModifierFlags) {
+        var modifiers: NSEvent.ModifierFlags = []
+        var keyChar: Character?
+        
+        for char in shortcutString {
+            switch char {
+            case "⌘": // Command
+                modifiers.insert(.command)
+            case "⌥": // Option
+                modifiers.insert(.option)
+            case "⇧": // Shift
+                modifiers.insert(.shift)
+            case "⌃": // Control
+                modifiers.insert(.control)
+            default:
+                keyChar = char
+            }
+        }
+        
+        let key = keyChar?.lowercased() ?? "n"
+        return (keyEquivalent: String(key), modifierMask: modifiers)
     }
     
     @objc private func quitApp() {

@@ -2,8 +2,6 @@
 
 > [!TIP]
 >
-> ## Idea right now
->
 > ### Why?
 >
 > - Not many tiling window managers for mac, mostly just window managers (eg window to the left side, center etc)
@@ -21,20 +19,4 @@
  ## Config usage
 
  - On the first run the application creates a config file at ~/.config/MacWinTil/config.json.
- - You can costumize apps to be excluded from tiling and keyboard shortcuts in the config file.
-   example usage:
-
-```json
-{
-  "excludedApps": ["Finder", "Xcode", "Terminal", "Activity Monitor"],
-  "shortcuts": {
-    "createNewSpace": "⌘⌥N",
-    "switchToSpace1": "⌘⌥1",
-    "switchToSpace2": "⌘⌥2",
-    "switchToSpace3": "⌘⌥3",
-    "switchToSpace4": "⌘⌥4",
-    "switchToSpace5": "⌘⌥5"
-  },
-  "version": "1.0"
-}
-```
+ - You can costumize apps to be excluded from tiling and keyboard shortcuts in the config file. Better instructions will be generated into a README file under the config.
