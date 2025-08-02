@@ -1,0 +1,574 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		FCA651F72E3E3B330092EA5C /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = FCA651F62E3E3B330092EA5C /* KeyboardShortcuts */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		FCA651D92E3E39E50092EA5C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FCA651C22E3E39E30092EA5C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FCA651C92E3E39E30092EA5C;
+			remoteInfo = MacWinTil;
+		};
+		FCA651E32E3E39E50092EA5C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = FCA651C22E3E39E30092EA5C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = FCA651C92E3E39E30092EA5C;
+			remoteInfo = MacWinTil;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		FCA651CA2E3E39E30092EA5C /* MacWinTil.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MacWinTil.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FCA651D82E3E39E50092EA5C /* MacWinTilTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacWinTilTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		FCA651E22E3E39E50092EA5C /* MacWinTilUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MacWinTilUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		FCA651CC2E3E39E30092EA5C /* MacWinTil */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MacWinTil;
+			sourceTree = "<group>";
+		};
+		FCA651DB2E3E39E50092EA5C /* MacWinTilTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MacWinTilTests;
+			sourceTree = "<group>";
+		};
+		FCA651E52E3E39E50092EA5C /* MacWinTilUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MacWinTilUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FCA651C72E3E39E30092EA5C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FCA651F72E3E3B330092EA5C /* KeyboardShortcuts in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCA651D52E3E39E50092EA5C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCA651DF2E3E39E50092EA5C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		FCA651C12E3E39E30092EA5C = {
+			isa = PBXGroup;
+			children = (
+				FCA651CC2E3E39E30092EA5C /* MacWinTil */,
+				FCA651DB2E3E39E50092EA5C /* MacWinTilTests */,
+				FCA651E52E3E39E50092EA5C /* MacWinTilUITests */,
+				FCA651CB2E3E39E30092EA5C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		FCA651CB2E3E39E30092EA5C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FCA651CA2E3E39E30092EA5C /* MacWinTil.app */,
+				FCA651D82E3E39E50092EA5C /* MacWinTilTests.xctest */,
+				FCA651E22E3E39E50092EA5C /* MacWinTilUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		FCA651C92E3E39E30092EA5C /* MacWinTil */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FCA651EC2E3E39E50092EA5C /* Build configuration list for PBXNativeTarget "MacWinTil" */;
+			buildPhases = (
+				FCA651C62E3E39E30092EA5C /* Sources */,
+				FCA651C72E3E39E30092EA5C /* Frameworks */,
+				FCA651C82E3E39E30092EA5C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				FCA651CC2E3E39E30092EA5C /* MacWinTil */,
+			);
+			name = MacWinTil;
+			packageProductDependencies = (
+				FCA651F62E3E3B330092EA5C /* KeyboardShortcuts */,
+			);
+			productName = MacWinTil;
+			productReference = FCA651CA2E3E39E30092EA5C /* MacWinTil.app */;
+			productType = "com.apple.product-type.application";
+		};
+		FCA651D72E3E39E50092EA5C /* MacWinTilTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FCA651EF2E3E39E50092EA5C /* Build configuration list for PBXNativeTarget "MacWinTilTests" */;
+			buildPhases = (
+				FCA651D42E3E39E50092EA5C /* Sources */,
+				FCA651D52E3E39E50092EA5C /* Frameworks */,
+				FCA651D62E3E39E50092EA5C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FCA651DA2E3E39E50092EA5C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				FCA651DB2E3E39E50092EA5C /* MacWinTilTests */,
+			);
+			name = MacWinTilTests;
+			packageProductDependencies = (
+			);
+			productName = MacWinTilTests;
+			productReference = FCA651D82E3E39E50092EA5C /* MacWinTilTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		FCA651E12E3E39E50092EA5C /* MacWinTilUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FCA651F22E3E39E50092EA5C /* Build configuration list for PBXNativeTarget "MacWinTilUITests" */;
+			buildPhases = (
+				FCA651DE2E3E39E50092EA5C /* Sources */,
+				FCA651DF2E3E39E50092EA5C /* Frameworks */,
+				FCA651E02E3E39E50092EA5C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FCA651E42E3E39E50092EA5C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				FCA651E52E3E39E50092EA5C /* MacWinTilUITests */,
+			);
+			name = MacWinTilUITests;
+			packageProductDependencies = (
+			);
+			productName = MacWinTilUITests;
+			productReference = FCA651E22E3E39E50092EA5C /* MacWinTilUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FCA651C22E3E39E30092EA5C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					FCA651C92E3E39E30092EA5C = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					FCA651D72E3E39E50092EA5C = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = FCA651C92E3E39E30092EA5C;
+					};
+					FCA651E12E3E39E50092EA5C = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = FCA651C92E3E39E30092EA5C;
+					};
+				};
+			};
+			buildConfigurationList = FCA651C52E3E39E30092EA5C /* Build configuration list for PBXProject "MacWinTil" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = FCA651C12E3E39E30092EA5C;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				FCA651F52E3E3B330092EA5C /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = FCA651CB2E3E39E30092EA5C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				FCA651C92E3E39E30092EA5C /* MacWinTil */,
+				FCA651D72E3E39E50092EA5C /* MacWinTilTests */,
+				FCA651E12E3E39E50092EA5C /* MacWinTilUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FCA651C82E3E39E30092EA5C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCA651D62E3E39E50092EA5C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCA651E02E3E39E50092EA5C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		FCA651C62E3E39E30092EA5C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCA651D42E3E39E50092EA5C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FCA651DE2E3E39E50092EA5C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		FCA651DA2E3E39E50092EA5C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FCA651C92E3E39E30092EA5C /* MacWinTil */;
+			targetProxy = FCA651D92E3E39E50092EA5C /* PBXContainerItemProxy */;
+		};
+		FCA651E42E3E39E50092EA5C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = FCA651C92E3E39E30092EA5C /* MacWinTil */;
+			targetProxy = FCA651E32E3E39E50092EA5C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		FCA651EA2E3E39E50092EA5C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		FCA651EB2E3E39E50092EA5C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		FCA651ED2E3E39E50092EA5C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacWinTil/MacWinTil.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = AinuRakk.MacWinTil;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		FCA651EE2E3E39E50092EA5C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = MacWinTil/MacWinTil.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = AinuRakk.MacWinTil;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		FCA651F02E3E39E50092EA5C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = AinuRakk.MacWinTilTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacWinTil.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MacWinTil";
+			};
+			name = Debug;
+		};
+		FCA651F12E3E39E50092EA5C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = AinuRakk.MacWinTilTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/MacWinTil.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/MacWinTil";
+			};
+			name = Release;
+		};
+		FCA651F32E3E39E50092EA5C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = AinuRakk.MacWinTilUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = MacWinTil;
+			};
+			name = Debug;
+		};
+		FCA651F42E3E39E50092EA5C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = AinuRakk.MacWinTilUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = MacWinTil;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		FCA651C52E3E39E30092EA5C /* Build configuration list for PBXProject "MacWinTil" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FCA651EA2E3E39E50092EA5C /* Debug */,
+				FCA651EB2E3E39E50092EA5C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FCA651EC2E3E39E50092EA5C /* Build configuration list for PBXNativeTarget "MacWinTil" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FCA651ED2E3E39E50092EA5C /* Debug */,
+				FCA651EE2E3E39E50092EA5C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FCA651EF2E3E39E50092EA5C /* Build configuration list for PBXNativeTarget "MacWinTilTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FCA651F02E3E39E50092EA5C /* Debug */,
+				FCA651F12E3E39E50092EA5C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FCA651F22E3E39E50092EA5C /* Build configuration list for PBXNativeTarget "MacWinTilUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FCA651F32E3E39E50092EA5C /* Debug */,
+				FCA651F42E3E39E50092EA5C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		FCA651F52E3E3B330092EA5C /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.3.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		FCA651F62E3E3B330092EA5C /* KeyboardShortcuts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FCA651F52E3E3B330092EA5C /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
+			productName = KeyboardShortcuts;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = FCA651C22E3E39E30092EA5C /* Project object */;
+}
