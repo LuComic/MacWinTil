@@ -15,9 +15,15 @@ class WindowManager: ObservableObject {
     
     private var windowObserver: AXObserver?
     private var layoutEnforcementTimer: Timer?
+    private var windowCloseMonitorTimer: Timer?
     private var isBringingAllToFront = false // Flag to prevent recursive activation
     private var originallyActivatedApp: NSRunningApplication? // Store the app user originally clicked
     private var lastActivatedApp: String? // Track the previously active app
+    
+    // Performance optimization for window monitoring
+    private var appWindowCounts: [String: Int] = [:] // Cache window counts for faster detection
+    private var pendingArrangement = false // Debounce arrangement calls
+    
     
     // Edit mode state
     @Published var isEditMode = false
@@ -34,6 +40,8 @@ class WindowManager: ObservableObject {
     
     deinit {
         removeEditModeKeyMonitor()
+        layoutEnforcementTimer?.invalidate()
+        windowCloseMonitorTimer?.invalidate()
     }
     
     private func requestAccessibilityPermissions() {
@@ -54,8 +62,8 @@ class WindowManager: ObservableObject {
         ) { [weak self] notification in
             if let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication {
                 print("App launched: \(app.localizedName ?? "Unknown")")
-                // Add a small delay to let the app fully launch before handling
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                // Reduced delay for faster response while maintaining stability
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     self?.handleApplicationLaunched(app)
                 }
             }
@@ -87,33 +95,50 @@ class WindowManager: ObservableObject {
         startWindowCloseMonitoring()
     }
     
+    private func handleApplicationTerminated(_ app: NSRunningApplication) {
+        guard let appName = app.localizedName else { return }
+        
+        // Skip our own app
+        if appName == "MacWinTil" { return }
+        
+        print("⚡ App terminated: \(appName) - immediate retiling")
+        
+        // Remove app from all spaces and track if it was in current space
+        var wasInCurrentSpace = false
+        for (space, apps) in spaces {
+            if space == currentSpace && apps.contains(appName) {
+                wasInCurrentSpace = true
+            }
+            spaces[space] = apps.filter { $0 != appName }
+        }
+        
+        // Clean up cached window count
+        appWindowCounts.removeValue(forKey: appName)
+        
+        // If this was the last activated app, clear it
+        if lastActivatedApp == appName {
+            lastActivatedApp = nil
+        }
+        
+        // If the terminated app was in the current space, immediately retile
+        if wasInCurrentSpace {
+            print("⚡ Terminated app was in current space - fast retiling")
+            scheduleArrangement()
+        }
+    }
+    
     private func handleApplicationLaunched(_ app: NSRunningApplication) {
         guard let appName = app.localizedName else { return }
         
         // Skip our own app
         if appName == "MacWinTil" { return }
         
-        // Check if app is excluded in config
+        print("App launched: \(appName)")
+        
+        // Skip excluded apps
         if ConfigManager.shared.isAppExcluded(appName) {
             print("App \(appName) is excluded by config, skipping")
-            // Still update lastActivatedApp for context tracking
-            lastActivatedApp = appName
             return
-        }
-        
-        // Skip only essential system processes, be more permissive with user apps
-        if let bundleId = app.bundleIdentifier {
-            // Only exclude core system processes that should never be managed
-            let coreSystemApps = [
-                "com.apple.finder",
-                "com.apple.dock",
-                "com.apple.systemuiserver",
-                "com.apple.controlcenter",
-                "com.apple.loginwindow",
-                "com.apple.WindowServer"
-            ]
-            
-            if coreSystemApps.contains(bundleId) { return }
         }
         
         // Only handle regular applications (not background processes)
@@ -121,45 +146,98 @@ class WindowManager: ObservableObject {
         
         print("Handling app launch: \(appName) (\(app.bundleIdentifier ?? "no bundle ID"))")
         
-        // Check if app is already running in another space
-        let existingSpace = findSpaceContaining(appName: appName)
-        
-        if let existingSpace = existingSpace, existingSpace != currentSpace {
-            // App exists in another space - activate and create new window
-            print("App \(appName) exists in space \(existingSpace), creating new window for space \(currentSpace)")
-            activateAppAndCreateNewWindow(app)
+        // Add to current space if not already there
+        if !spaces[currentSpace, default: []].contains(appName) {
+            spaces[currentSpace, default: []].append(appName)
+            print("✅ Added \(appName) to space \(currentSpace)")
         }
         
-        // Add app to current space if not already present
-        if !spaces[currentSpace, default: []].contains(appName) {
-            // Check context BEFORE adding to space to get accurate previous state
-            let currentSpaceApps = spaces[currentSpace, default: []]
-            let wasLastAppTiled = lastActivatedApp != nil && currentSpaceApps.contains(lastActivatedApp!)
+        // Save the current frontmost app before bringing all to front
+        self.originallyActivatedApp = app
+        
+        // Check if we're launching from an excluded app
+        let wasLastAppExcluded = lastActivatedApp != nil && ConfigManager.shared.isAppExcluded(lastActivatedApp!)
+        
+        // Update last activated app to the newly launched app
+        lastActivatedApp = appName
+        
+        // First, activate the app to ensure it's frontmost
+        if #available(macOS 14.0, *) {
+            app.activate(options: [.activateAllWindows])
+        } else {
+            app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+        }
+        
+        // Force immediate arrangement
+        arrangeWindowsInCurrentSpace()
+        
+        if wasLastAppExcluded {
+            print("🚀 Launching tiled app from excluded app, bringing all tiled windows to front")
             
-            // Now add the app to the space
-            spaces[currentSpace, default: []].append(appName)
-            print("Added \(appName) to space \(currentSpace)")
-            
-            print("Debug Launch: New app: \(appName), Last app: \(lastActivatedApp ?? "none"), Was last tiled: \(wasLastAppTiled)")
-            
-            // If launching from excluded context, bring all tiled windows to front
-            if !wasLastAppTiled && !isBringingAllToFront {
-                print("Launching tiled app from excluded context, bringing all tiled windows to front")
-                originallyActivatedApp = app
-                bringAllTiledWindowsToFront()
-            } else {
-                print("Launching from tiled context, normal arrangement")
-                // Normal tiling arrangement
-                arrangeWindowsInCurrentSpace()
+            // Use a more aggressive approach for excluded app launch
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                guard let self = self else { return }
                 
-                // Single retry after delay to override app's position memory
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    self.arrangeWindowsInCurrentSpace()
+                // Ensure the app is in the current space
+                if let appName = app.localizedName, !self.spaces[self.currentSpace, default: []].contains(appName) {
+                    self.spaces[self.currentSpace, default: []].append(appName)
+                    print("✅ Re-added \(appName) to ensure it's included in tiling")
+                }
+                
+                // Force the app to be frontmost with higher priority
+                if #available(macOS 14.0, *) {
+                    app.activate(options: [.activateAllWindows])
+                } else {
+                    app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+                }
+                
+                // Bring all tiled windows to front
+                self.bringAllTiledWindowsToFront()
+                
+                // Final arrangement with additional activation
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+                    // Ensure the app is still frontmost
+                    if #available(macOS 14.0, *) {
+                        app.activate(options: [.activateAllWindows])
+                    } else {
+                        app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+                    }
+                    
+                    // One final arrangement
+                    self?.arrangeWindowsInCurrentSpace()
+                    
+                    // One more activation to ensure the app stays in front
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        if #available(macOS 14.0, *) {
+                            app.activate(options: [.activateAllWindows])
+                        } else {
+                            app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+                        }
+                    }
                 }
             }
+        } else {
+            print("🚀 Normal app launch - also bringing all tiled windows to front to maintain layout")
             
-            // Update last activated app to the newly launched app
-            lastActivatedApp = appName
+            // Even for normal launches, bring all tiled windows to front to maintain proper layering
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                guard let self = self else { return }
+                
+                // Activate the newly launched app first
+                if #available(macOS 14.0, *) {
+                    app.activate(options: [.activateAllWindows])
+                } else {
+                    app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
+                }
+                
+                // Bring all tiled windows to front to maintain proper layout
+                self.bringAllTiledWindowsToFront()
+                
+                // Final arrangement
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                    self?.arrangeWindowsInCurrentSpace()
+                }
+            }
         }
     }
     
@@ -206,59 +284,46 @@ class WindowManager: ObservableObject {
         
         print("Debug: Current app: \(appName), Last app: \(lastActivatedApp ?? "none"), Was last tiled: \(wasLastAppTiled), Current is tiled: \(isAppInCurrentSpace)")
         
-        // Only bring all to front if:
-        // 1. Current app is tiled AND
-        // 2. Previous app was NOT tiled (switching from non-tiled to tiled context) AND
-        // 3. We're not already bringing all to front
-        if isAppInCurrentSpace && !wasLastAppTiled && !isBringingAllToFront {
-            print("Switching from non-tiled to tiled app (\(appName)), bringing all tiled windows to front")
-            // Save the originally activated app
-            originallyActivatedApp = app
-            bringAllTiledWindowsToFront()
-        } else if isAppInCurrentSpace {
-            print("Staying within tiled context (\(appName)), no need to bring all to front")
-        } else {
-            print("App \(appName) is not tiled, no action needed")
-        }
+        // Determine if we're switching from an excluded app to a tiled app
+        let wasLastAppExcluded = lastActivatedApp != nil && ConfigManager.shared.isAppExcluded(lastActivatedApp!)
         
-        // Update the last activated app after the logic
+        print("🔍 Activation context - Current: \(appName), Last: \(lastActivatedApp ?? "none"), IsTiled: \(isAppInCurrentSpace), WasTiled: \(wasLastAppTiled), WasExcluded: \(wasLastAppExcluded)")
+        
+        // Always update lastActivatedApp to the current app
         lastActivatedApp = appName
         
-        // Check if app is already running in another space
-        let existingSpace = findSpaceContaining(appName: appName)
-        
-        if let existingSpace = existingSpace, existingSpace != currentSpace {
-            // App exists in another space - activate and create new window
-            print("App \(appName) exists in space \(existingSpace), creating new window for space \(currentSpace)")
-            activateAppAndCreateNewWindow(app)
-        }
-        
-        // Add app to current space if not already present
-        if !spaces[currentSpace, default: []].contains(appName) {
-            spaces[currentSpace, default: []].append(appName)
+        // If current app is tiled, handle window management
+        if isAppInCurrentSpace {
+            // Only bring all to front if coming from an excluded app
+            if wasLastAppExcluded {
+                print("🔄 Switching to tiled app (\(appName)) from excluded app")
+                
+                // Save the originally activated app
+                originallyActivatedApp = app
+                
+                // First activate the app to ensure it's frontmost
+                if #available(macOS 14.0, *) {
+                    app.activate(options: [.activateAllWindows])
+                } else {
+                    app.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
+                }
+                
+                // Then bring all tiled windows to front after a small delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                    self?.bringAllTiledWindowsToFront()
+                }
+            } else {
+                print("ℹ️ Staying within tiled context (\(appName)), no need to bring all to front")
+            }
+        } else {
+            print("ℹ️ App \(appName) is not tiled, no action needed")
             
-            // Force immediate arrangement
-            arrangeWindowsInCurrentSpace()
-            
-            // Single retry after delay to override app's position memory (reduced to avoid flashing)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self.arrangeWindowsInCurrentSpace()
+            // If switching to an excluded app from a tiled app, ensure we can come back properly
+            if wasLastAppTiled && !wasLastAppExcluded && !isBringingAllToFront {
+                print("💡 Switched from tiled app to non-tiled app, preparing for return")
+                originallyActivatedApp = nil
             }
         }
-    }
-    
-    private func handleApplicationTerminated(_ app: NSRunningApplication) {
-        guard let appName = app.localizedName else { return }
-        
-        // Remove app from all spaces
-        for spaceNumber in spaces.keys {
-            spaces[spaceNumber]?.removeAll { $0 == appName }
-        }
-        
-        // Rearrange windows in current space if needed
-        arrangeWindowsInCurrentSpace()
-        
-        print("App terminated: \(appName)")
     }
     
     private func startLayoutEnforcement() {
@@ -272,57 +337,96 @@ class WindowManager: ObservableObject {
     }
     
     private func startWindowCloseMonitoring() {
-        // Monitor for window close events by checking window count changes
-        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { [weak self] _ in
+        // More frequent monitoring for faster response to window closes
+        windowCloseMonitorTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             self?.checkForClosedWindows()
         }
     }
     
     private func checkForClosedWindows() {
-        // Check each app in current space to see if windows were closed
-        let currentApps = spaces[currentSpace, default: []]
-        var appsToRemove: [String] = []
+        // Skip if already processing to avoid redundant work
+        guard !pendingArrangement else { return }
         
+        let currentApps = spaces[currentSpace, default: []]
+        guard !currentApps.isEmpty else { return }
+        
+        var appsToRemove: [String] = []
+        var windowCountChanges: [String: Int] = [:]
+        
+        // Batch check all apps for efficiency
         for appName in currentApps {
             if let app = NSWorkspace.shared.runningApplications.first(where: { $0.localizedName == appName }) {
-                let appRef = AXUIElementCreateApplication(app.processIdentifier)
-                var windowList: CFTypeRef?
-                let result = AXUIElementCopyAttributeValue(appRef, kAXWindowsAttribute as CFString, &windowList)
+                let currentWindowCount = getVisibleWindowCount(for: app)
+                let previousCount = appWindowCounts[appName] ?? 0
                 
-                if result == .success, let windows = windowList as? [AXUIElement] {
-                    // Check if app has any visible (non-minimized) windows
-                    let hasVisibleWindows = windows.contains { window in
-                        var minimized: CFTypeRef?
-                        AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minimized)
-                        if let isMinimized = minimized as? Bool {
-                            return !isMinimized
-                        }
-                        return true // Assume visible if we can't determine
-                    }
-                    
-                    // If no visible windows, remove from current space
-                    if !hasVisibleWindows {
-                        appsToRemove.append(appName)
-                    }
-                } else {
-                    // If we can't get windows, assume app should be removed
+                // Store the current count for next comparison
+                windowCountChanges[appName] = currentWindowCount
+                
+                // If window count dropped to 0, mark for removal
+                if currentWindowCount == 0 {
                     appsToRemove.append(appName)
+                    print("⚡ Fast removal: \(appName) has no visible windows")
+                } else if currentWindowCount != previousCount {
+                    print("📊 Window count changed for \(appName): \(previousCount) → \(currentWindowCount)")
                 }
             } else {
                 // App is no longer running
                 appsToRemove.append(appName)
+                print("⚡ Fast removal: \(appName) is no longer running")
             }
         }
         
-        // Remove apps that have no visible windows and re-arrange
-        for appName in appsToRemove {
-            spaces[currentSpace]?.removeAll { $0 == appName }
-            print("Removed \(appName) from space \(currentSpace) - no visible windows")
+        // Update cached window counts
+        for (appName, count) in windowCountChanges {
+            appWindowCounts[appName] = count
         }
         
-        // Re-arrange if any apps were removed
+        // Remove apps that have no visible windows
         if !appsToRemove.isEmpty {
-            arrangeWindowsInCurrentSpace()
+            for appName in appsToRemove {
+                spaces[currentSpace]?.removeAll { $0 == appName }
+                appWindowCounts.removeValue(forKey: appName) // Clean up cache
+                print("🗑️ Removed \(appName) from space \(currentSpace)")
+            }
+            
+            // Debounce arrangement to avoid multiple rapid calls
+            scheduleArrangement()
+        }
+    }
+    
+    private func getVisibleWindowCount(for app: NSRunningApplication) -> Int {
+        let appRef = AXUIElementCreateApplication(app.processIdentifier)
+        var windowList: CFTypeRef?
+        let result = AXUIElementCopyAttributeValue(appRef, kAXWindowsAttribute as CFString, &windowList)
+        
+        guard result == .success, let windows = windowList as? [AXUIElement] else {
+            return 0
+        }
+        
+        // Count only visible (non-minimized) windows
+        return windows.reduce(0) { count, window in
+            var minimized: CFTypeRef?
+            AXUIElementCopyAttributeValue(window, kAXMinimizedAttribute as CFString, &minimized)
+            if let isMinimized = minimized as? Bool, !isMinimized {
+                return count + 1
+            }
+            return count
+        }
+    }
+    
+    private func scheduleArrangement() {
+        // Prevent multiple rapid arrangement calls
+        guard !pendingArrangement else { return }
+        
+        pendingArrangement = true
+        
+        // Use a small delay to batch multiple changes
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self = self else { return }
+            
+            print("⚡ Fast retiling after window changes")
+            self.arrangeWindowsInCurrentSpace()
+            self.pendingArrangement = false
         }
     }
     
@@ -597,46 +701,73 @@ class WindowManager: ObservableObject {
     // MARK: - Window Management
     private func bringAllTiledWindowsToFront() {
         let currentSpaceApps = spaces[currentSpace, default: []]
+        print("🔵 Bringing all tiled windows to front. Current space apps: \(currentSpaceApps)")
         
         // Set flag to prevent recursive activation
         isBringingAllToFront = true
         
-        // Bring each tiled app to front with a small delay to avoid conflicts
-        for (index, appName) in currentSpaceApps.enumerated() {
-            if let app = NSWorkspace.shared.runningApplications.first(where: { $0.localizedName == appName }) {
-                // Use a small delay between activations to ensure proper ordering
-                let delay = Double(index) * 0.02 // 20ms between each app
+        // First, collect all apps that need to be activated
+        let appsToActivate = currentSpaceApps.compactMap { appName -> NSRunningApplication? in
+            guard let app = NSWorkspace.shared.runningApplications.first(where: { $0.localizedName == appName }) else {
+                print("⚠️ Could not find running app: \(appName)")
+                return nil
+            }
+            return app
+        }
+        
+        print("🔄 Will activate \(appsToActivate.count) apps in order: \(appsToActivate.compactMap { $0.localizedName })")
+        
+        // First pass: activate all apps with minimal delay to bring their windows to front
+        for (index, app) in appsToActivate.enumerated() {
+            let delay = Double(index) * 0.02 // 100ms between each app
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
                 
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    // Activate the app to bring its windows to front
-                    app.activate(options: [])
-                    print("Brought \(appName) to front (delay: \(delay)s)")
+                print("🔵 Activating \(app.localizedName ?? "unknown") (delay: \(delay)s)")
+                if #available(macOS 14.0, *) {
+                    app.activate(options: [.activateAllWindows])
+                } else {
+                    app.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
+                }
+                
+                // Force the app's windows to front
+                if let windows = CGWindowListCopyWindowInfo(.optionOnScreenOnly, kCGNullWindowID) as? [[String: Any]] {
+                    let appWindows = windows.filter { ($0[kCGWindowOwnerName as String] as? String) == app.localizedName }
+                    print("   Found \(appWindows.count) windows for \(app.localizedName ?? "unknown")")
                 }
             }
         }
         
-        // After bringing all apps to front, rearrange to ensure proper tiling
-        DispatchQueue.main.asyncAfter(deadline: .now() + Double(currentSpaceApps.count) * 0.02 + 0.05) {
+        // Second pass: arrange windows and final activation
+        let totalDelay = Double(appsToActivate.count) * 0.02 + 0.05
+        DispatchQueue.main.asyncAfter(deadline: .now() + totalDelay) { [weak self] in
+            guard let self = self else { return }
+            
+            print("🔄 Arranging windows after bringing all to front")
             self.arrangeWindowsInCurrentSpace()
-            // Clear flag after all activations are complete
-            self.isBringingAllToFront = false
             
-            // Now activate the originally clicked app
+            // If we have an originally activated app, bring it to front again
             if let originalApp = self.originallyActivatedApp {
-                // Temporarily set flag to prevent re-triggering the loop
-                self.isBringingAllToFront = true
-                originalApp.activate(options: [])
-                if let appName = originalApp.localizedName {
-                    print("Re-activated original app: \(appName)")
+                print("🔵 Re-activating original app: \(originalApp.localizedName ?? "unknown")")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                    if #available(macOS 14.0, *) {
+                        originalApp.activate(options: [.activateAllWindows])
+                    } else {
+                        originalApp.activate(options: [.activateIgnoringOtherApps, .activateAllWindows])
+                    }
+                    
+                    // Clear the stored app and flag after a short delay
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                        guard let self = self else { return }
+                        print("✅ Finished bringing all tiled windows to front")
+                        self.originallyActivatedApp = nil
+                        self.isBringingAllToFront = false
+                    }
                 }
-                // Clear the stored app and flag after a short delay
-                self.originallyActivatedApp = nil
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    self.isBringingAllToFront = false
-                }
+            } else {
+                print("✅ Finished bringing all tiled windows to front (no original app)")
+                self.isBringingAllToFront = false
             }
-            
-            print("Finished bringing all tiled windows to front")
         }
     }
     
@@ -903,7 +1034,7 @@ class WindowManager: ObservableObject {
         let currentCol = currentIndex % appsPerRow
         let totalRows = (totalApps + appsPerRow - 1) / appsPerRow
         
-        print("🔄 Horizontal move: index=\(currentIndex), row=\(currentRow), col=\(currentCol), total=\(totalApps)")
+        print("🔄 Horizontal move: index=\(currentIndex), row=\(currentRow), col=\(currentCol), total=\(totalApps), rows=\(totalRows), cols=\(appsPerRow)")
         
         let targetCol: Int
         switch direction {
@@ -956,9 +1087,7 @@ class WindowManager: ObservableObject {
         let appsPerRow = min(2, totalApps) // Max 2 apps per row for small numbers
         let currentRow = currentIndex / appsPerRow
         let currentCol = currentIndex % appsPerRow
-        let totalRows = (totalApps + appsPerRow - 1) / appsPerRow
-        
-        print("🔄 Vertical move: index=\(currentIndex), row=\(currentRow), col=\(currentCol), total=\(totalApps), rows=\(totalRows), cols=\(appsPerRow)")
+        print("🔄 Vertical move: index=\(currentIndex), row=\(currentRow), col=\(currentCol), total=\(totalApps), rows=\((totalApps + appsPerRow - 1) / appsPerRow), cols=\(appsPerRow)")
         
         var targetRow = currentRow
         switch direction {
@@ -967,10 +1096,10 @@ class WindowManager: ObservableObject {
                 targetRow = currentRow - 1
             } else {
                 // If at top row, wrap to bottom row
-                targetRow = totalRows - 1
+                targetRow = (totalApps + appsPerRow - 1) / appsPerRow - 1
             }
         case .down:
-            if currentRow < totalRows - 1 {
+            if currentRow < (totalApps + appsPerRow - 1) / appsPerRow - 1 {
                 targetRow = currentRow + 1
             } else {
                 // If at bottom row, wrap to top row
