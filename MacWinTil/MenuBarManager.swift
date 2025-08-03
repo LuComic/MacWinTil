@@ -39,6 +39,13 @@ class MenuBarManager: ObservableObject {
                 self?.updateMenuBarTitle()
             }
         }.store(in: &cancellables)
+        
+        // Update menubar when edit mode changes
+        windowManager.$isEditMode.sink { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.updateMenuBarTitle()
+            }
+        }.store(in: &cancellables)
     }
     
     private var cancellables = Set<AnyCancellable>()
@@ -47,6 +54,7 @@ class MenuBarManager: ObservableObject {
         // Get all space numbers and show as filled/unfilled circles
         let sortedSpaces = windowManager.spaces.keys.sorted()
         let currentSpace = windowManager.currentSpace
+        let isEditMode = windowManager.isEditMode
         
         var circles: [String] = []
         
@@ -59,7 +67,23 @@ class MenuBarManager: ObservableObject {
         }
         
         let title = circles.joined(separator: " ")
-        statusItem?.button?.title = title
+        
+        if let button = statusItem?.button {
+            if isEditMode {
+                // Create attributed string with light blue color for edit mode
+                let attributedTitle = NSAttributedString(
+                    string: title,
+                    attributes: [.foregroundColor: NSColor.systemBlue]
+                )
+                button.attributedTitle = attributedTitle
+            } else {
+                // Normal white/system color
+                button.attributedTitle = NSAttributedString(
+                    string: title,
+                    attributes: [.foregroundColor: NSColor.controlTextColor]
+                )
+            }
+        }
     }
     
     @objc private func menuBarClicked() {

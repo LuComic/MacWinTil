@@ -18,7 +18,7 @@ extension KeyboardShortcuts.Name {
     static let switchToSpace3 = Self("switchToSpace3")
     static let switchToSpace4 = Self("switchToSpace4")
     static let switchToSpace5 = Self("switchToSpace5")
-    static let toggleAppExclusion = Self("toggleAppExclusion")
+    static let enterEditMode = Self("enterEditMode")
 }
 
 class KeyboardShortcutsManager {
@@ -62,8 +62,8 @@ class KeyboardShortcutsManager {
             self?.windowManager.switchToSpace(5)
         }
         
-        setupShortcut(for: .toggleAppExclusion, configKey: "toggleAppExclusion", shortcuts: shortcuts) { [weak self] in
-            self?.windowManager.toggleCurrentAppExclusion()
+        setupShortcut(for: .enterEditMode, configKey: "enterEditMode", shortcuts: shortcuts) { [weak self] in
+            self?.windowManager.enterEditMode()
         }
     }
     

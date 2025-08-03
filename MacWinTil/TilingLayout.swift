@@ -59,13 +59,6 @@ struct TilingLayout {
             height: screenFrame.height
         )
         
-        let bottomRightQuarterFrame = NSRect(
-            x: screenFrame.minX + halfWidth,
-            y: screenFrame.minY,
-            width: halfWidth,
-            height: quarterHeight
-        )
-        
         let topRightQuarterFrame = NSRect(
             x: screenFrame.minX + halfWidth,
             y: screenFrame.minY + quarterHeight,
@@ -73,7 +66,14 @@ struct TilingLayout {
             height: quarterHeight
         )
         
-        return [leftHalfFrame, bottomRightQuarterFrame, topRightQuarterFrame]
+        let bottomRightQuarterFrame = NSRect(
+            x: screenFrame.minX + halfWidth,
+            y: screenFrame.minY,
+            width: halfWidth,
+            height: quarterHeight
+        )
+        
+        return [leftHalfFrame, topRightQuarterFrame, bottomRightQuarterFrame]
     }
     
     private static func calculateFourWindowLayout(in screenFrame: NSRect) -> [NSRect] {

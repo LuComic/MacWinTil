@@ -27,7 +27,7 @@ struct MacWinTilConfig: Codable {
             "switchToSpace3": "⌘⌥3",
             "switchToSpace4": "⌘⌥4",
             "switchToSpace5": "⌘⌥5",
-            "toggleAppExclusion": "⇧⌘⌥E",
+            "enterEditMode": "⇧⌘⌥E",
             "newWindowShortcut": "⌘N"
         ],
         version: "1.0"
@@ -148,14 +148,20 @@ Customize keyboard shortcuts in the `shortcuts` object:
 - **⇧⌘⌥N** - Create new space
 - **⇧⌘⌥W** - Close current space  
 - **⌘⌥1-5** - Switch to space 1-5
-- **⇧⌘⌥E** - Toggle exclusion of currently active app from tiling
+- **⇧⌘⌥E** - Enter edit mode (menubar icon turns blue)
 - **⌘N** - New window shortcut (used when creating windows in spaces)
 
-### Dynamic App Exclusion
-You can exclude/include apps from tiling without editing the config:
-1. Focus the app you want to exclude/include
-2. Press **⇧⌘⌥E** to toggle its exclusion status
-3. The change is automatically saved to the config file
+### Edit Mode
+Edit mode provides vim-style window management and app exclusion:
+1. Press **⇧⌘⌥E** to enter edit mode (menubar icon turns blue)
+2. While in edit mode, press:
+   - **e** - Toggle exclusion of currently active app from tiling
+   - **h** - Move current window left (swap with left neighbor)
+   - **j** - Move current window down (swap with below neighbor)
+   - **k** - Move current window up (swap with above neighbor)
+   - **l** - Move current window right (swap with right neighbor)
+   - **Any other key** - Exit edit mode
+3. Changes are automatically saved to the config file
 
 ### Applying Changes
 After modifying the config file, restart MacWinTil for changes to take effect.

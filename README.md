@@ -15,6 +15,13 @@
 - Install and build the app in Xcode
 - You might have to give it access for Accessibility under Privacy & Security
 
+## Features
+
+- A tiling window manager, so opens apps in a spiral
+- A config file, to exclude apps from tiling and edit shortcuts
+- Edit mode, which lets you move the windows around and include/exclude them instantly
+- Spaces (don't really work rn and are buggy)
+
 
  ## Config usage
 

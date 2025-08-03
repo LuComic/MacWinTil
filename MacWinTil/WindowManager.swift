@@ -19,6 +19,10 @@ class WindowManager: ObservableObject {
     private var originallyActivatedApp: NSRunningApplication? // Store the app user originally clicked
     private var lastActivatedApp: String? // Track the previously active app
     
+    // Edit mode state
+    @Published var isEditMode = false
+    private var editModeKeyMonitor: Any?
+    
     init() {
         requestAccessibilityPermissions()
         setupWindowObserver()
@@ -26,6 +30,10 @@ class WindowManager: ObservableObject {
         
         // Print config info on startup
         ConfigManager.shared.printConfigInfo()
+    }
+    
+    deinit {
+        removeEditModeKeyMonitor()
     }
     
     private func requestAccessibilityPermissions() {
@@ -124,17 +132,34 @@ class WindowManager: ObservableObject {
         
         // Add app to current space if not already present
         if !spaces[currentSpace, default: []].contains(appName) {
-            spaces[currentSpace, default: []].append(appName)
+            // Check context BEFORE adding to space to get accurate previous state
+            let currentSpaceApps = spaces[currentSpace, default: []]
+            let wasLastAppTiled = lastActivatedApp != nil && currentSpaceApps.contains(lastActivatedApp!)
             
+            // Now add the app to the space
+            spaces[currentSpace, default: []].append(appName)
             print("Added \(appName) to space \(currentSpace)")
             
-            // Force immediate arrangement
-            arrangeWindowsInCurrentSpace()
+            print("Debug Launch: New app: \(appName), Last app: \(lastActivatedApp ?? "none"), Was last tiled: \(wasLastAppTiled)")
             
-            // Single retry after delay to override app's position memory (reduced to avoid flashing)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self.arrangeWindowsInCurrentSpace()
+            // If launching from excluded context, bring all tiled windows to front
+            if !wasLastAppTiled && !isBringingAllToFront {
+                print("Launching tiled app from excluded context, bringing all tiled windows to front")
+                originallyActivatedApp = app
+                bringAllTiledWindowsToFront()
+            } else {
+                print("Launching from tiled context, normal arrangement")
+                // Normal tiling arrangement
+                arrangeWindowsInCurrentSpace()
+                
+                // Single retry after delay to override app's position memory
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    self.arrangeWindowsInCurrentSpace()
+                }
             }
+            
+            // Update last activated app to the newly launched app
+            lastActivatedApp = appName
         }
     }
     
@@ -616,7 +641,109 @@ class WindowManager: ObservableObject {
     }
     
     // MARK: - App Exclusion Toggle
-    func toggleCurrentAppExclusion() {
+    func enterEditMode() {
+        print("🔧 Entering edit mode")
+        
+        // Store the currently active app
+        originallyActivatedApp = NSWorkspace.shared.frontmostApplication
+        
+        isEditMode = true
+        
+        // Activate our app first
+        NSApp.activate(ignoringOtherApps: true)
+        
+        // Small delay to ensure our app is active before monitoring keys
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            self?.setupEditModeKeyMonitor()
+            
+            // After setting up the monitor, reactivate the original app
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                if #available(macOS 14.0, *) {
+                    self?.originallyActivatedApp?.activate()
+                } else {
+                    self?.originallyActivatedApp?.activate(options: .activateIgnoringOtherApps)
+                }
+            }
+        }
+    }
+    
+    private func exitEditMode() {
+        print("🔧 Exiting edit mode")
+        isEditMode = false
+        removeEditModeKeyMonitor()
+        
+        // Reactivate the original app when exiting edit mode
+        if let app = originallyActivatedApp {
+            DispatchQueue.main.async { [weak self] in
+                if #available(macOS 14.0, *) {
+                    app.activate()
+                } else {
+                    app.activate(options: .activateIgnoringOtherApps)
+                }
+                // Clear the reference to avoid potential retain cycles
+                self?.originallyActivatedApp = nil
+            }
+        }
+    }
+    
+    private func setupEditModeKeyMonitor() {
+        // Remove existing monitor if any
+        removeEditModeKeyMonitor()
+        
+        // First, activate the app to ensure we receive key events
+        NSApp.activate(ignoringOtherApps: true)
+        
+        // Use a global monitor to catch events even when the app isn't active
+        editModeKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self = self, self.isEditMode else { return }
+            
+            // Get the key without modifiers
+            guard let chars = event.charactersIgnoringModifiers?.lowercased(),
+                  let key = chars.unicodeScalars.first?.value else {
+                self.exitEditMode()
+                return
+            }
+            
+            // Convert to character and handle the key
+            let char = Character(UnicodeScalar(key)!)
+            
+            // Process the key press on the main thread
+            DispatchQueue.main.async {
+                self.handleEditModeKeyPress(char)
+            }
+        }
+    }
+    
+    private func handleEditModeKeyPress(_ char: Character) {
+        print("🔑 Edit mode key pressed: \(char)")
+        
+        switch char {
+        case "e":
+            toggleCurrentAppExclusion()
+            exitEditMode()
+        case "h":
+            moveCurrentWindowLeft()
+        case "j":
+            moveCurrentWindowDown()
+        case "k":
+            moveCurrentWindowUp()
+        case "l":
+            moveCurrentWindowRight()
+        default:
+            // Any other key exits edit mode
+            print("❌ Unknown key, exiting edit mode")
+            exitEditMode()
+        }
+    }
+    
+    private func removeEditModeKeyMonitor() {
+        if let monitor = editModeKeyMonitor {
+            NSEvent.removeMonitor(monitor)
+            editModeKeyMonitor = nil
+        }
+    }
+    
+    private func toggleCurrentAppExclusion() {
         guard let frontmostApp = NSWorkspace.shared.frontmostApplication,
               let appName = frontmostApp.localizedName else {
             print("⚠️ Could not get frontmost application")
@@ -662,6 +789,211 @@ class WindowManager: ObservableObject {
             // Rearrange current space
             arrangeWindowsInCurrentSpace()
         }
+    }
+    
+    // MARK: - Window Movement Methods
+    private func moveCurrentWindowLeft() {
+        moveCurrentWindow(direction: .left)
+    }
+    
+    private func moveCurrentWindowRight() {
+        moveCurrentWindow(direction: .right)
+    }
+    
+    private func moveCurrentWindowUp() {
+        moveCurrentWindow(direction: .up)
+    }
+    
+    private func moveCurrentWindowDown() {
+        moveCurrentWindow(direction: .down)
+    }
+    
+    private enum MoveDirection {
+        case left, right, up, down
+    }
+    
+    private func moveCurrentWindow(direction: MoveDirection) {
+        guard let frontmostApp = NSWorkspace.shared.frontmostApplication,
+              let appName = frontmostApp.localizedName else {
+            print("⚠️ Could not get frontmost application")
+            return
+        }
+        
+        var currentSpaceApps = spaces[currentSpace, default: []]
+        guard let currentIndex = currentSpaceApps.firstIndex(of: appName) else {
+            print("⚠️ \(appName) not found in current space")
+            return
+        }
+        
+        let targetIndex: Int
+        let directionName: String
+        
+        switch direction {
+        case .left, .right:
+            targetIndex = getTargetIndexForHorizontalMove(
+                currentIndex: currentIndex,
+                direction: direction,
+                totalApps: currentSpaceApps.count
+            )
+            directionName = direction == .left ? "left" : "right"
+        case .up, .down:
+            targetIndex = getTargetIndexForVerticalMove(
+                currentIndex: currentIndex,
+                direction: direction,
+                totalApps: currentSpaceApps.count
+            )
+            directionName = direction == .up ? "up" : "down"
+        }
+        
+        // Only swap if the target index is different and valid
+        if targetIndex != currentIndex && targetIndex >= 0 && targetIndex < currentSpaceApps.count {
+            // Store the current frontmost app to restore focus later
+            let wasFrontmostApp = NSWorkspace.shared.frontmostApplication
+            
+            // Perform the swap
+            currentSpaceApps.swapAt(currentIndex, targetIndex)
+            spaces[currentSpace] = currentSpaceApps
+            
+            print("🔄 Moved \(appName) \(directionName) (from position \(currentIndex) to \(targetIndex))")
+            
+            // Rearrange windows to reflect the new order
+            arrangeWindowsInCurrentSpace()
+            
+            // Keep the same app focused after moving
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                if #available(macOS 14.0, *) {
+                    wasFrontmostApp?.activate()
+                } else {
+                    wasFrontmostApp?.activate(options: .activateIgnoringOtherApps)
+                }
+            }
+        } else {
+            print("ℹ️ No movement - already at the \(directionName) edge")
+        }
+    }
+    
+    private func getTargetIndexForHorizontalMove(currentIndex: Int, direction: MoveDirection, totalApps: Int) -> Int {
+        guard totalApps > 1 else { return currentIndex }
+        
+        // Special handling for 3 windows (left half, top right, bottom right)
+        if totalApps == 3 {
+            print("🔄 3-window layout detected in horizontal move")
+            switch (currentIndex, direction) {
+            // Left half (0) - can only move right (to 1)
+            case (0, .right): return 1
+            
+            // Top right (1) - can move left (to 0)
+            case (1, .left): return 0
+            
+            // Bottom right (2) - can move left (to 0)
+            case (2, .left): return 0
+            
+            // All other cases - no movement
+            default: 
+                print("No horizontal movement - invalid direction for current window position")
+                return currentIndex
+            }
+        }
+        
+        // For other numbers of windows, use the grid-based approach
+        let maxAppsPerRow = totalApps <= 4 ? 2 : Int(ceil(sqrt(Double(totalApps))))
+        let appsPerRow = min(maxAppsPerRow, totalApps)
+        
+        let currentRow = currentIndex / appsPerRow
+        let currentCol = currentIndex % appsPerRow
+        let totalRows = (totalApps + appsPerRow - 1) / appsPerRow
+        
+        print("🔄 Horizontal move: index=\(currentIndex), row=\(currentRow), col=\(currentCol), total=\(totalApps)")
+        
+        let targetCol: Int
+        switch direction {
+        case .left:
+            // Move left, wrap around to the end of the row if at the start
+            targetCol = currentCol > 0 ? currentCol - 1 : appsPerRow - 1
+        case .right:
+            // Move right, wrap around to the start of the row if at the end
+            targetCol = (currentCol + 1) % appsPerRow
+        default:
+            return currentIndex
+        }
+        
+        // Calculate the target index in the same row but different column
+        var targetIndex = currentRow * appsPerRow + targetCol
+        
+        // Ensure the target index is within bounds
+        targetIndex = min(targetIndex, totalApps - 1)
+        
+        print("   → Moving to: index=\(targetIndex), row=\(targetIndex/appsPerRow), col=\(targetIndex%appsPerRow)")
+        return targetIndex
+    }
+    
+    private func getTargetIndexForVerticalMove(currentIndex: Int, direction: MoveDirection, totalApps: Int) -> Int {
+        guard totalApps > 1 else { return currentIndex }
+        
+        // Special handling for 3 windows (left half, top right, bottom right)
+        if totalApps == 3 {
+            print("🔄 3-window layout detected")
+            switch (currentIndex, direction) {
+            // Left half (0) - can only move right (to 1)
+            case (0, .right): return 1
+            
+            // Top right (1) - can move left (to 0) or down (to 2)
+            case (1, .left): return 0
+            case (1, .down): return 2
+            
+            // Bottom right (2) - can move left (to 0) or up (to 1)
+            case (2, .left): return 0
+            case (2, .up): return 1
+            
+            // All other cases - no movement
+            default: 
+                print("No movement - invalid direction for current window position")
+                return currentIndex
+            }
+        }
+        
+        // For other numbers of windows, use the grid-based approach
+        let appsPerRow = min(2, totalApps) // Max 2 apps per row for small numbers
+        let currentRow = currentIndex / appsPerRow
+        let currentCol = currentIndex % appsPerRow
+        let totalRows = (totalApps + appsPerRow - 1) / appsPerRow
+        
+        print("🔄 Vertical move: index=\(currentIndex), row=\(currentRow), col=\(currentCol), total=\(totalApps), rows=\(totalRows), cols=\(appsPerRow)")
+        
+        var targetRow = currentRow
+        switch direction {
+        case .up:
+            if currentRow > 0 {
+                targetRow = currentRow - 1
+            } else {
+                // If at top row, wrap to bottom row
+                targetRow = totalRows - 1
+            }
+        case .down:
+            if currentRow < totalRows - 1 {
+                targetRow = currentRow + 1
+            } else {
+                // If at bottom row, wrap to top row
+                targetRow = 0
+            }
+        default:
+            return currentIndex
+        }
+        
+        // Calculate the target index in the same column
+        var targetIndex = targetRow * appsPerRow + currentCol
+        
+        // If the target position is beyond the total number of apps,
+        // adjust to the last position in the target row
+        if targetIndex >= totalApps {
+            // Find the last position in the target row
+            let firstInRow = targetRow * appsPerRow
+            let lastInRow = min(firstInRow + appsPerRow, totalApps) - 1
+            targetIndex = lastInRow
+        }
+        
+        print("   → Moving to: index=\(targetIndex), row=\(targetRow), col=\(currentCol)")
+        return targetIndex
     }
     
     // MARK: - Helper Methods
