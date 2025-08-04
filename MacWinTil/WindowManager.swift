@@ -32,17 +32,22 @@ class WindowManager: ObservableObject {
     
     init() {
         requestAccessibilityPermissions()
+        loadSpacesFromDisk()
         setupWindowObserver()
         startLayoutEnforcement()
         
         // Print config info on startup
         ConfigManager.shared.printConfigInfo()
+        
+        // Setup sleep/wake notifications
+        setupSleepWakeNotifications()
     }
     
     deinit {
         removeEditModeKeyMonitor()
         layoutEnforcementTimer?.invalidate()
         windowCloseMonitorTimer?.invalidate()
+        saveSpacesToDisk()
     }
     
     private func requestAccessibilityPermissions() {
@@ -151,6 +156,11 @@ class WindowManager: ObservableObject {
         if !spaces[currentSpace, default: []].contains(appName) {
             spaces[currentSpace, default: []].append(appName)
             print("✅ Added \(appName) to space \(currentSpace)")
+            
+            // Save on first app to ensure file gets created
+            if spaces[currentSpace]?.count == 1 {
+                saveSpacesToDisk()
+            }
         }
         
         // Save the current frontmost app before bringing all to front
@@ -467,6 +477,9 @@ class WindowManager: ObservableObject {
         let newSpaceNumber = (spaces.keys.max() ?? 0) + 1
         spaces[newSpaceNumber] = []
         currentSpace = newSpaceNumber
+        
+        // Save state
+        saveSpacesToDisk()
     }
     
     func switchToSpace(_ spaceNumber: Int) {
@@ -480,6 +493,9 @@ class WindowManager: ObservableObject {
         
         // Restore windows in target space
         restoreWindowsInSpace(spaceNumber)
+        
+        // Save state
+        saveSpacesToDisk()
     }
     
     func closeCurrentSpace() {
@@ -1179,4 +1195,98 @@ class WindowManager: ObservableObject {
         
         return (key: String(key), modifiers: modifierString.isEmpty ? "{}" : "{\(modifierString)}")
     }
+    
+    // MARK: - Space Persistence
+    private func getSpacesFilePath() -> String {
+        let homeDirectory = FileManager.default.homeDirectoryForCurrentUser
+        let configDir = homeDirectory.appendingPathComponent(".config/MacWinTil")
+        return configDir.appendingPathComponent("spaces.json").path
+    }
+    
+    private func saveSpacesToDisk() {
+        let spacesData = SpacesData(spaces: spaces, currentSpace: currentSpace)
+        
+        do {
+            // Ensure directory exists
+            let filePath = getSpacesFilePath()
+            let dirPath = URL(fileURLWithPath: filePath).deletingLastPathComponent().path
+            try FileManager.default.createDirectory(atPath: dirPath, withIntermediateDirectories: true, attributes: nil)
+            
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = .prettyPrinted
+            let data = try encoder.encode(spacesData)
+            try data.write(to: URL(fileURLWithPath: filePath))
+            print("💾 Spaces saved to disk")
+        } catch {
+            print("❌ Error saving spaces: \(error)")
+        }
+    }
+    
+    private func loadSpacesFromDisk() {
+        let filePath = getSpacesFilePath()
+        
+        guard FileManager.default.fileExists(atPath: filePath) else {
+            print("📝 No spaces file found, using defaults")
+            return
+        }
+        
+        do {
+            let data = try Data(contentsOf: URL(fileURLWithPath: filePath))
+            let spacesData = try JSONDecoder().decode(SpacesData.self, from: data)
+            
+            spaces = spacesData.spaces
+            currentSpace = spacesData.currentSpace
+            
+            print("✅ Loaded spaces from disk: \(spaces.count) spaces, current: \(currentSpace)")
+        } catch {
+            print("⚠️ Error loading spaces, using defaults: \(error)")
+        }
+    }
+    
+    private func setupSleepWakeNotifications() {
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.willSleepNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("💤 System going to sleep - saving spaces")
+            self?.saveSpacesToDisk()
+        }
+        
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("☀️ System woke up - restoring spaces")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+                self?.restoreSpacesAfterWake()
+            }
+        }
+    }
+    
+    private func restoreSpacesAfterWake() {
+        print("🔄 Restoring spaces after wake...")
+        
+        // Re-validate all apps in spaces and remove any that are no longer running
+        for (spaceNumber, apps) in spaces {
+            let validApps = apps.filter { appName in
+                NSWorkspace.shared.runningApplications.contains { $0.localizedName == appName }
+            }
+            
+            if validApps.count != apps.count {
+                print("🧹 Cleaned space \(spaceNumber): \(apps.count) → \(validApps.count) apps")
+                spaces[spaceNumber] = validApps
+            }
+        }
+        
+        // Restore current space
+        restoreWindowsInSpace(currentSpace)
+        saveSpacesToDisk()
+    }
+}
+
+struct SpacesData: Codable {
+    let spaces: [Int: [String]]
+    let currentSpace: Int
 }

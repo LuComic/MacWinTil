@@ -28,6 +28,11 @@ class StartupManager {
                 "com.apple.MacWinTil"
             ]
             
+            // Skip apps excluded in config
+            if ConfigManager.shared.isAppExcluded(appName) {
+                return false
+            }
+            
             return !systemApps.contains(bundleId) && 
                    !bundleId.hasPrefix("com.apple.") &&
                    appName != "MacWinTil" &&
