@@ -1,8 +1,9 @@
 # MacWinTil
 
-**A lightweight, native macOS tiling window manager built with Swift**
+*A lightweight, native macOS tiling window manager built with Swift**
 
-> [!TIP] Why MacWinTil?
+> [!TIP] 
+> **Why MacWinTil?**
 >
 > - Most macOS "tiling" managers are just basic window positioning tools
 > - Existing solutions lack visual indicators and proper workspace management
@@ -20,9 +21,10 @@
   - 4 windows: Perfect quadrant grid
   - 5+ windows: Dynamic grid layout
 
-### 🏠 **Virtual Spaces 
 
-> [!WARNING] (still buggy and WIP)**
+> [!WARNING] 
+> ### 🏠 **Virtual Spaces 
+> **(still buggy and WIP)**
 
 - Create unlimited virtual workspaces for different projects
 - Visual menubar indicators (●○○) showing current and available spaces
