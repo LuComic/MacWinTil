@@ -315,9 +315,19 @@ class WindowManager: ObservableObject {
                     print("🔄 App \(appName) has \(windowCount) windows but isn't tiled - re-adding to current space")
                     self.spaces[self.currentSpace, default: []].append(appName)
                     
-                    // Arrange windows to include the re-added app
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        self.arrangeWindowsInCurrentSpace()
+                    // If coming from excluded app, bring all tiled windows to front
+                    if wasLastAppExcluded {
+                        print("🚀 Re-adding app from excluded app - bringing all tiled windows to front")
+                        self.originallyActivatedApp = app
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            self.bringAllTiledWindowsToFront()
+                        }
+                    } else {
+                        // Just arrange windows normally
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                            self.arrangeWindowsInCurrentSpace()
+                        }
                     }
                 }
             }
