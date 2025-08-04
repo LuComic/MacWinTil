@@ -217,26 +217,11 @@ class WindowManager: ObservableObject {
                 }
             }
         } else {
-            print("🚀 Normal app launch - also bringing all tiled windows to front to maintain layout")
+            print("🚀 Normal app launch - simple arrangement")
             
-            // Even for normal launches, bring all tiled windows to front to maintain proper layering
+            // For normal launches, just arrange windows without bringing all to front
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                guard let self = self else { return }
-                
-                // Activate the newly launched app first
-                if #available(macOS 14.0, *) {
-                    app.activate(options: [.activateAllWindows])
-                } else {
-                    app.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
-                }
-                
-                // Bring all tiled windows to front to maintain proper layout
-                self.bringAllTiledWindowsToFront()
-                
-                // Final arrangement
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
-                    self?.arrangeWindowsInCurrentSpace()
-                }
+                self?.arrangeWindowsInCurrentSpace()
             }
         }
     }
@@ -316,7 +301,21 @@ class WindowManager: ObservableObject {
                 print("ℹ️ Staying within tiled context (\(appName)), no need to bring all to front")
             }
         } else {
-            print("ℹ️ App \(appName) is not tiled, no action needed")
+            // Check if this app has windows but isn't in any space (was removed due to window closure)
+            // Use a small delay to allow apps with delayed window creation (like Spotify) to show windows
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                guard let self = self else { return }
+                let windowCount = self.getVisibleWindowCount(for: app)
+                if windowCount > 0 && !self.spaces[self.currentSpace, default: []].contains(appName) {
+                    print("🔄 App \(appName) has \(windowCount) windows but isn't tiled - re-adding to current space")
+                    self.spaces[self.currentSpace, default: []].append(appName)
+                    
+                    // Arrange windows to include the re-added app
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        self.arrangeWindowsInCurrentSpace()
+                    }
+                }
+            }
             
             // If switching to an excluded app from a tiled app, ensure we can come back properly
             if wasLastAppTiled && !wasLastAppExcluded && !isBringingAllToFront {
