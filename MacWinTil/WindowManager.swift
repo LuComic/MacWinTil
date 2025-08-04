@@ -352,6 +352,7 @@ class WindowManager: ObservableObject {
         
         var appsToRemove: [String] = []
         var windowCountChanges: [String: Int] = [:]
+        var appsWithZeroWindows: [String] = []
         
         // Batch check all apps for efficiency
         for appName in currentApps {
@@ -362,17 +363,31 @@ class WindowManager: ObservableObject {
                 // Store the current count for next comparison
                 windowCountChanges[appName] = currentWindowCount
                 
-                // If window count dropped to 0, mark for removal
+                // If window count dropped to 0, don't immediately remove - could be temporary
                 if currentWindowCount == 0 {
-                    appsToRemove.append(appName)
-                    print("⚡ Fast removal: \(appName) has no visible windows")
+                    appsWithZeroWindows.append(appName)
                 } else if currentWindowCount != previousCount {
                     print("📊 Window count changed for \(appName): \(previousCount) → \(currentWindowCount)")
                 }
             } else {
-                // App is no longer running
+                // App is no longer running - this is a definitive removal case
                 appsToRemove.append(appName)
                 print("⚡ Fast removal: \(appName) is no longer running")
+            }
+        }
+        
+        // Check if ALL apps have zero windows - this indicates a temporary accessibility issue
+        // (like desktop switch or sleep), so don't remove anything
+        if appsWithZeroWindows.count == currentApps.count && currentApps.count > 1 {
+            print("🔍 All apps show zero windows - likely temporary accessibility issue, skipping removal")
+            return
+        }
+        
+        // Only remove apps with zero windows if it's not a system-wide accessibility issue
+        if !appsWithZeroWindows.isEmpty && appsWithZeroWindows.count < currentApps.count {
+            for appName in appsWithZeroWindows {
+                appsToRemove.append(appName)
+                print("⚡ Removal: \(appName) has no visible windows (selective removal)")
             }
         }
         
@@ -381,7 +396,7 @@ class WindowManager: ObservableObject {
             appWindowCounts[appName] = count
         }
         
-        // Remove apps that have no visible windows
+        // Remove apps that genuinely have no visible windows or are no longer running
         if !appsToRemove.isEmpty {
             for appName in appsToRemove {
                 spaces[currentSpace]?.removeAll { $0 == appName }
