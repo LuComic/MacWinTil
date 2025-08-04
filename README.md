@@ -23,7 +23,7 @@
 
 
 > [!WARNING] 
-> ### 🏠 **Virtual Spaces 
+> ### 🏠 Virtual Spaces 
 > **(still buggy and WIP)**
 
 - Create unlimited virtual workspaces for different projects
