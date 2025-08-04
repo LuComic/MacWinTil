@@ -19,6 +19,7 @@ class WindowManager: ObservableObject {
     private var isBringingAllToFront = false // Flag to prevent recursive activation
     private var originallyActivatedApp: NSRunningApplication? // Store the app user originally clicked
     private var lastActivatedApp: String? // Track the previously active app
+    private var previousActivatedApp: String? // Store app before activation to detect excluded launches
     
     // Performance optimization for window monitoring
     private var appWindowCounts: [String: Int] = [:] // Cache window counts for faster detection
@@ -155,8 +156,9 @@ class WindowManager: ObservableObject {
         // Save the current frontmost app before bringing all to front
         self.originallyActivatedApp = app
         
-        // Check if we're launching from an excluded app
-        let wasLastAppExcluded = lastActivatedApp != nil && ConfigManager.shared.isAppExcluded(lastActivatedApp!)
+        // Check if we're launching from an excluded app using previousActivatedApp
+        let wasLastAppExcluded = previousActivatedApp != nil && ConfigManager.shared.isAppExcluded(previousActivatedApp!)
+        print("🔍 Launch context - App: \(appName), PreviousApp: \(previousActivatedApp ?? "none"), WasExcluded: \(wasLastAppExcluded)")
         
         // Update last activated app to the newly launched app
         lastActivatedApp = appName
@@ -273,6 +275,9 @@ class WindowManager: ObservableObject {
         let wasLastAppExcluded = lastActivatedApp != nil && ConfigManager.shared.isAppExcluded(lastActivatedApp!)
         
         print("🔍 Activation context - Current: \(appName), Last: \(lastActivatedApp ?? "none"), IsTiled: \(isAppInCurrentSpace), WasTiled: \(wasLastAppTiled), WasExcluded: \(wasLastAppExcluded)")
+        
+        // Store the previous app before updating
+        previousActivatedApp = lastActivatedApp
         
         // Always update lastActivatedApp to the current app
         lastActivatedApp = appName
