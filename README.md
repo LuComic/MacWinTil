@@ -1,6 +1,6 @@
 # MacWinTil
 
-*A lightweight, native macOS tiling window manager built with Swift**
+*A lightweight, native macOS tiling window manager built with Swift*
 
 > [!TIP] 
 > **Why MacWinTil?**
