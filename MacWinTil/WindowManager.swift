@@ -41,6 +41,9 @@ class WindowManager: ObservableObject {
         
         // Setup sleep/wake notifications
         setupSleepWakeNotifications()
+        
+        // Setup desktop switch notifications
+        setupDesktopSwitchNotifications()
     }
     
     deinit {
@@ -1265,6 +1268,32 @@ class WindowManager: ObservableObject {
         }
     }
     
+    private func setupDesktopSwitchNotifications() {
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.activeSpaceDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            print("🖥️ Desktop switched - saving spaces")
+            self?.saveSpacesToDisk()
+        }
+        
+        // Also monitor when our app becomes active (user returns to our desktop)
+        NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            if let app = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+               app.bundleIdentifier == Bundle.main.bundleIdentifier {
+                print("🔄 MacWinTil activated - reloading spaces")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    self?.reloadSpacesFromDisk()
+                }
+            }
+        }
+    }
+    
     private func restoreSpacesAfterWake() {
         print("🔄 Restoring spaces after wake...")
         
@@ -1283,6 +1312,16 @@ class WindowManager: ObservableObject {
         // Restore current space
         restoreWindowsInSpace(currentSpace)
         saveSpacesToDisk()
+    }
+    
+    private func reloadSpacesFromDisk() {
+        print("🔄 Reloading spaces from disk...")
+        loadSpacesFromDisk()
+        
+        // Restore current space after reload
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            self.restoreWindowsInSpace(self.currentSpace)
+        }
     }
 }
 
